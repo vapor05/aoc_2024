@@ -1,3 +1,5 @@
+import copy
+import enum
 import functools
 import re
 import pathlib
@@ -349,7 +351,9 @@ def problem4_part2(test: bool = False) -> str:
     return str(finds)
 
 
-def _load_problem5_data(test: bool = False) -> tuple[dict[int, set[int]], list[list[int]]]:
+def _load_problem5_data(
+    test: bool = False,
+) -> tuple[dict[int, set[int]], list[list[int]]]:
     name = "problem5.txt" if not test else "test_problem5.txt"
     fl = _problem_data_file(name)
     rules: dict[int, set[int]] = {}
@@ -361,7 +365,7 @@ def _load_problem5_data(test: bool = False) -> tuple[dict[int, set[int]], list[l
                 nums = line.strip().split("|")
                 key = int(nums[0])
                 value = int(nums[1])
-                
+
                 if key not in rules:
                     rules[key] = set()
 
@@ -379,7 +383,7 @@ def problem5_part1(test: bool = False) -> str:
 
     for update in updates:
         search = {n: i for i, n in enumerate(update)}
-    
+
         for i, n in enumerate(update):
             if n not in rules:
                 continue
@@ -392,7 +396,7 @@ def problem5_part1(test: bool = False) -> str:
                     continue
 
                 check_i = search[rule]
-                
+
                 if i >= check_i:
                     fail_rules = True
                     break
@@ -403,18 +407,29 @@ def problem5_part1(test: bool = False) -> str:
         if not fail_rules:
             valid_updates.append(update)
 
-    mid_points = [vu[int(len(vu)/2)] for vu in valid_updates]
+    mid_points = [vu[int(len(vu) / 2)] for vu in valid_updates]
     return str(sum(mid_points))
 
 
 def problem5_part2(test: bool = False) -> str:
     rules, updates = _load_problem5_data(test)
     corrected_updates: list[list[int]] = []
-    invalid=[]
+    invalid = []
+
+    def _sort(a, b) -> int:
+        a_rules = rules.get(a)
+
+        if a_rules is None:
+            return 0
+
+        if b in a_rules:
+            return -1
+        else:
+            return 1
 
     for update in updates:
         search = {n: i for i, n in enumerate(update)}
-    
+
         for i, n in enumerate(update):
             if n not in rules:
                 continue
@@ -427,7 +442,7 @@ def problem5_part2(test: bool = False) -> str:
                     continue
 
                 check_i = search[rule]
-                
+
                 if i >= check_i:
                     fail_rules = True
                     break
@@ -437,24 +452,179 @@ def problem5_part2(test: bool = False) -> str:
 
         if not fail_rules:
             continue
-        
-        invalid.append(update)
-        def _sort(a, b) -> int:
-            a_rules = rules.get(a)
 
-            if a_rules is None:
-                return 0
-            
-            if b in a_rules:
-                return -1
-            else:
-                return 1
-        
+        invalid.append(update)
         corrected_updates.append(sorted(update, key=functools.cmp_to_key(_sort)))
 
-    mid_points = [vu[int(len(vu)/2)] for vu in corrected_updates]
+    mid_points = [vu[int(len(vu) / 2)] for vu in corrected_updates]
     return str(sum(mid_points))
 
 
+def _load_problem6_data(
+    test: bool = False,
+) -> tuple[list[list[str]], tuple[int, int] | None]:
+    name = "problem6.txt" if not test else "test_problem6.txt"
+    fl = _problem_data_file(name)
+    data: list[list[str]] = []
+    guard_pos: tuple[int, int] | None = None
+
+    with open(fl) as f:
+        for row, l in enumerate(f.readlines()):
+            cols = []
+
+            for col, c in enumerate(l.strip()):
+                c = c.strip()
+
+                if c == "^":
+                    guard_pos = (row, col)
+
+                cols.append(c)
+            
+            data.append(cols)
+
+    return data, guard_pos
 
 
+class GuardFacing(enum.Enum):
+    UP = "up"
+    RIGHT = "right"
+    DOWN = "down"
+    LEFT = "left"
+
+
+def _turn_right(gf: GuardFacing) -> GuardFacing:
+    if gf == GuardFacing.UP:
+        return GuardFacing.RIGHT
+    elif gf == GuardFacing.RIGHT:
+        return GuardFacing.DOWN
+    elif gf == GuardFacing.DOWN:
+        return GuardFacing.LEFT
+    
+    return GuardFacing.UP
+
+
+def problem6_part1(test: bool = False) -> str:
+    data, guard_pos = _load_problem6_data(test)
+
+    if guard_pos is None:
+        raise Exception("no guard starting position found")
+
+    visited: list[tuple[int, int]] = [guard_pos]
+    rows = len(data)
+    cols = len(data[0])
+    guard_row = guard_pos[0]
+    guard_col = guard_pos[1]
+    guard_facing = GuardFacing.UP
+    steps = 0  
+
+    while guard_row >= 0 and guard_row < rows and guard_col >= 0 and guard_col < cols:
+        steps += 1
+
+        if guard_facing == GuardFacing.UP:
+            check_row = guard_row-1
+            check_col = guard_col
+        elif guard_facing == GuardFacing.RIGHT:
+            check_row = guard_row
+            check_col = guard_col+1
+        elif guard_facing == GuardFacing.DOWN:
+            check_row = guard_row+1
+            check_col = guard_col
+        else:
+            check_row = guard_row
+            check_col = guard_col-1
+
+        # check if guard has gone off grid
+        if check_row < 0 or check_row >= rows or check_col < 0 or check_col >= cols:
+            break
+
+        check = data[check_row][check_col]
+
+        if check == '#':
+            guard_facing = _turn_right(guard_facing)
+        else:
+            guard_row = check_row
+            guard_col = check_col
+            visited.append((guard_row, guard_col))
+
+        if steps > 10000:
+            raise Exception("too many steps")
+
+    return str(len(set(visited)))
+
+
+def _run_guard_path(data: list[list[str]], guard_pos: tuple[int, int]) -> tuple[list[tuple[int, int, GuardFacing]], bool]:
+    visited: list[tuple[int, int, GuardFacing]] = [(guard_pos[0], guard_pos[1], GuardFacing.UP)]
+    rows = len(data)
+    cols = len(data[0])
+    guard_row = guard_pos[0]
+    guard_col = guard_pos[1]
+    guard_facing = GuardFacing.UP
+    steps = 0
+
+    while guard_row >= 0 and guard_row < rows and guard_col >= 0 and guard_col < cols:
+        steps += 1
+
+        if guard_facing == GuardFacing.UP:
+            check_row = guard_row-1
+            check_col = guard_col
+        elif guard_facing == GuardFacing.RIGHT:
+            check_row = guard_row
+            check_col = guard_col+1
+        elif guard_facing == GuardFacing.DOWN:
+            check_row = guard_row+1
+            check_col = guard_col
+        else:
+            check_row = guard_row
+            check_col = guard_col-1
+
+        # check if guard has gone off grid
+        if check_row < 0 or check_row >= rows or check_col < 0 or check_col >= cols:
+            return visited, False
+
+        check = data[check_row][check_col]
+
+        if check == '#':
+            guard_facing = _turn_right(guard_facing)
+        else:
+            guard_row = check_row
+            guard_col = check_col
+            new_pos = (guard_row, guard_col, guard_facing)
+
+            if new_pos in visited:
+                return visited, True
+            
+            visited.append((guard_row, guard_col, guard_facing))
+
+        if steps > 10000:
+            raise Exception("too many steps")
+
+def problem6_part2(test: bool) -> str:
+    data, guard_pos = _load_problem6_data(test)
+
+    if guard_pos is None:
+        raise Exception("no guard starting position found")
+    
+    visited, _ = _run_guard_path(data, guard_pos)
+    check_points = set([(e[0], e[1]) for e in visited])
+    print(len(check_points))
+    loops = 0 
+    i = 0    
+
+    for row, col in check_points:
+        i+=1
+        print(i, end=",", flush=True)
+        replace = data[row][col]
+        
+        if replace == "#" or replace == "^":
+            continue
+
+        data[row][col] = "#"
+        _, has_loop = _run_guard_path(data, guard_pos)
+
+        if has_loop:
+            loops += 1
+
+        data[row][col] = replace
+        
+    print("")
+    return str(loops)
