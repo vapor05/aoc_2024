@@ -12,10 +12,10 @@ if __name__ == "__main__":
     parser.add_argument("--test", action="store_true", required=False)
     args = parser.parse_args()
     print(f"Running problem {args.problem} part {args.part}...")
-    problems = importlib.import_module("problems")
+    problems = importlib.import_module(f"problem{args.problem}")
 
     try:
-        solve_fn = getattr(problems, f"problem{args.problem}_part{args.part}")
+        solve_fn = getattr(problems, f"part{args.part}")
         solution = solve_fn(test=args.test)
         print(f"Solution to problem {args.problem} part {args.part} is {solution}")
     except AttributeError as ex:
