@@ -16,11 +16,13 @@ if __name__ == "__main__":
 
     try:
         solve_fn = getattr(problems, f"part{args.part}")
-        solution = solve_fn(test=args.test)
-        print(f"Solution to problem {args.problem} part {args.part} is {solution}")
+        has_fn = True
     except AttributeError as ex:
         print(
             f"No solution function defined for part {args.part} of problem {args.problem}"
         )
+        has_fn = False
 
-    
+    if has_fn:
+        solution = solve_fn(test=args.test)
+        print(f"Solution to problem {args.problem} part {args.part} is {solution}")

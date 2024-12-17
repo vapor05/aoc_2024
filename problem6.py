@@ -1,4 +1,3 @@
-
 import enum
 import utils
 
@@ -22,7 +21,7 @@ def _load_problem6_data(
                     guard_pos = (row, col)
 
                 cols.append(c)
-            
+
             data.append(cols)
 
     return data, guard_pos
@@ -42,7 +41,7 @@ def _turn_right(gf: GuardFacing) -> GuardFacing:
         return GuardFacing.DOWN
     elif gf == GuardFacing.DOWN:
         return GuardFacing.LEFT
-    
+
     return GuardFacing.UP
 
 
@@ -58,23 +57,23 @@ def part1(test: bool = False) -> str:
     guard_row = guard_pos[0]
     guard_col = guard_pos[1]
     guard_facing = GuardFacing.UP
-    steps = 0  
+    steps = 0
 
     while guard_row >= 0 and guard_row < rows and guard_col >= 0 and guard_col < cols:
         steps += 1
 
         if guard_facing == GuardFacing.UP:
-            check_row = guard_row-1
+            check_row = guard_row - 1
             check_col = guard_col
         elif guard_facing == GuardFacing.RIGHT:
             check_row = guard_row
-            check_col = guard_col+1
+            check_col = guard_col + 1
         elif guard_facing == GuardFacing.DOWN:
-            check_row = guard_row+1
+            check_row = guard_row + 1
             check_col = guard_col
         else:
             check_row = guard_row
-            check_col = guard_col-1
+            check_col = guard_col - 1
 
         # check if guard has gone off grid
         if check_row < 0 or check_row >= rows or check_col < 0 or check_col >= cols:
@@ -82,7 +81,7 @@ def part1(test: bool = False) -> str:
 
         check = data[check_row][check_col]
 
-        if check == '#':
+        if check == "#":
             guard_facing = _turn_right(guard_facing)
         else:
             guard_row = check_row
@@ -95,8 +94,12 @@ def part1(test: bool = False) -> str:
     return str(len(set(visited)))
 
 
-def _run_guard_path(data: list[list[str]], guard_pos: tuple[int, int]) -> tuple[list[tuple[int, int, GuardFacing]], bool]:
-    visited: list[tuple[int, int, GuardFacing]] = [(guard_pos[0], guard_pos[1], GuardFacing.UP)]
+def _run_guard_path(
+    data: list[list[str]], guard_pos: tuple[int, int]
+) -> tuple[list[tuple[int, int, GuardFacing]], bool]:
+    visited: list[tuple[int, int, GuardFacing]] = [
+        (guard_pos[0], guard_pos[1], GuardFacing.UP)
+    ]
     rows = len(data)
     cols = len(data[0])
     guard_row = guard_pos[0]
@@ -108,17 +111,17 @@ def _run_guard_path(data: list[list[str]], guard_pos: tuple[int, int]) -> tuple[
         steps += 1
 
         if guard_facing == GuardFacing.UP:
-            check_row = guard_row-1
+            check_row = guard_row - 1
             check_col = guard_col
         elif guard_facing == GuardFacing.RIGHT:
             check_row = guard_row
-            check_col = guard_col+1
+            check_col = guard_col + 1
         elif guard_facing == GuardFacing.DOWN:
-            check_row = guard_row+1
+            check_row = guard_row + 1
             check_col = guard_col
         else:
             check_row = guard_row
-            check_col = guard_col-1
+            check_col = guard_col - 1
 
         # check if guard has gone off grid
         if check_row < 0 or check_row >= rows or check_col < 0 or check_col >= cols:
@@ -126,7 +129,7 @@ def _run_guard_path(data: list[list[str]], guard_pos: tuple[int, int]) -> tuple[
 
         check = data[check_row][check_col]
 
-        if check == '#':
+        if check == "#":
             guard_facing = _turn_right(guard_facing)
         else:
             guard_row = check_row
@@ -135,29 +138,30 @@ def _run_guard_path(data: list[list[str]], guard_pos: tuple[int, int]) -> tuple[
 
             if new_pos in visited:
                 return visited, True
-            
+
             visited.append((guard_row, guard_col, guard_facing))
 
         if steps > 10000:
             raise Exception("too many steps")
+
 
 def part2(test: bool) -> str:
     data, guard_pos = _load_problem6_data(test)
 
     if guard_pos is None:
         raise Exception("no guard starting position found")
-    
+
     visited, _ = _run_guard_path(data, guard_pos)
     check_points = set([(e[0], e[1]) for e in visited])
     print(len(check_points))
-    loops = 0 
-    i = 0    
+    loops = 0
+    i = 0
 
     for row, col in check_points:
-        i+=1
+        i += 1
         print(i, end=",", flush=True)
         replace = data[row][col]
-        
+
         if replace == "#" or replace == "^":
             continue
 
@@ -168,6 +172,6 @@ def part2(test: bool) -> str:
             loops += 1
 
         data[row][col] = replace
-        
+
     print("")
     return str(loops)
